@@ -1,0 +1,6 @@
+myenv
+cache
+*.pyc
+__pycache__/
+.env
+mylanguageguru-b744f-firebase-adminsdk-fbsvc-c87529538e.json
