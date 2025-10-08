@@ -18,8 +18,11 @@ settings = get_settings()
 
 # Create FastAPI app
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.API_VERSION,
+    title="MLG Multi-tenant SaaS API",
+    description="A comprehensive multi-tenant SaaS platform for MLG",
+    version="1.0.0",
+    docs_url=f"{settings.API_BASE_PATH}/docs",
+    openapi_url=f"{settings.API_BASE_PATH}/openapi.json",
     debug=settings.debug
 )
 
