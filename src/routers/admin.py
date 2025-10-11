@@ -30,9 +30,9 @@ def approve_teacher(email: str, current_user: dict = Depends(get_current_user)):
         raise HTTPException(404, "Application not found")
 
     # Create user
-    user = supabase.auth.admin.create_user({
+    user = supabase.auth.sign_up({
         "email": email,
-        "password": "Temp@12345",
+        "password": "Test@1234",
         "email_confirm": True
     })
 
