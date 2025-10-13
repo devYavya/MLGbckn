@@ -18,19 +18,48 @@ router = APIRouter(prefix="/courses", tags=["Courses"])
 # 📘  COURSE MANAGEMENT
 # ============================
 @router.post("", response_model=CourseOut)
-def create_course(payload: CourseCreate, current_user=Depends(get_current_user)):
-    """Create a new course (Teacher only)"""
+async def create_course(
+    title: str,
+    description: Optional[str] = None,
+    file: Optional[UploadFile] = File(None),  # thumbnail upload
+    current_user=Depends(get_current_user)
+):
+    """
+    Create a new course (Teacher only)
+    Optionally upload a thumbnail image to Firebase
+    """
     if current_user["role"] != "teacher":
         raise HTTPException(403, "Only teachers can create courses")
 
+    thumbnail_url = None
+
+    # ✅ If user uploaded a thumbnail file
+    if file:
+        try:
+            timestamp = int(time.time())
+            filename = f"thumbnails/{timestamp}_{file.filename}"
+
+            blob = bucket.blob(filename)
+            blob.upload_from_file(file.file, content_type=file.content_type)
+            blob.make_public() 
+
+            thumbnail_url = blob.public_url
+        except Exception as e:
+            raise HTTPException(500, f"Error uploading thumbnail: {str(e)}")
+
+    # ✅ Save course record in Supabase
     result = supabase.table("courses").insert({
-        "title": payload.title,
-        "description": payload.description,
-        "thumbnail_url": str(payload.thumbnail_url) if payload.thumbnail_url else None,
+        "title": title,
+        "description": description,
+        "thumbnail_url": thumbnail_url,
         "created_by": current_user["sub"]
     }).execute()
 
+    if not result.data:
+        raise HTTPException(500, "Error creating course")
+
     return result.data[0]
+
 
 
 @router.get("", response_model=List[CourseOut])
