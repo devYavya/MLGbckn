@@ -5,3 +5,4 @@ __pycache__/
 .env
 mylanguageguru-b744f-firebase-adminsdk-fbsvc-c87529538e.json
 dev.py
+firebase_client.py
