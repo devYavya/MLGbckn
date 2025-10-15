@@ -162,19 +162,37 @@ def get_module_lessons(module_id: str):
 @router.get("/{course_id}/price")
 def get_course_price(course_id: str, country: str):
     """
-    Get course price for a specific country
+    Get course price for a specific country.
+    If not found, fallback to first available pricing.
     """
-    record = supabase.table("course_pricing")\
-        .select("country, currency_symbol, price")\
+    # Try to get pricing for the specific country
+    response = supabase.table("course_pricing")\
+        .select("country, currency_symbol, price, duration_months")\
         .eq("course_id", course_id)\
         .eq("country", country)\
-        .single()\
         .execute()
 
-    if not record.data:
-        raise HTTPException(404, "Pricing not set for this course in your region")
+    # If not found, fallback to default or first pricing
+    if not response.data or len(response.data) == 0:
+        fallback = supabase.table("course_pricing")\
+            .select("country, currency_symbol, price, duration_months")\
+            .eq("course_id", course_id)\
+            .execute()
 
-    return record.data
+        if not fallback.data or len(fallback.data) == 0:
+            raise HTTPException(404, "Pricing not set for this course in any region")
+
+        return {
+            "message": f"No pricing for '{country}'. Showing default pricing.",
+            "price": fallback.data[0]
+        }
+
+    # Return the matching record
+    return {
+        "message": f"Pricing found for '{country}'",
+        "price": response.data[0]
+    }
+
 
 @router.post("/upload-lesson-video")
 async def upload_lesson_video(
