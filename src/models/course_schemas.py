@@ -68,4 +68,4 @@ class CoursePrice(BaseModel):
     price: float
     currency_symbol: str = "INR"
     duration_months: int = 6
-    category: Optional[str] = None
+    country: Optional[str] = None  # null = global

@@ -60,44 +60,69 @@ def approve_teacher(email: str, current_user: dict = Depends(get_current_user)):
     return {"message": "Teacher approved and account created", "user_id": user.user.id}
 
 
-@router.post("/set-pricing")
-def set_pricing(payload: PricingCreate, current_user=Depends(get_current_user)):
-    """
-    Set course pricing for a specific country - Admin only
-    """
-    if current_user["role"] != "super_admin":
-        raise HTTPException(403, "Only admin can control pricing")
 
-    record = supabase.table("course_pricing").upsert({
-        "course_id": payload.course_id,
-        "country": payload.country,
-        "currency_symbol": payload.currency_symbol,
-        "price": payload.price
-    }).execute()
-
-    return {"message": "Pricing updated", "pricing": record.data}
 
 
 @router.post("/set-price/{course_id}")
 def set_course_price(
-    course_id: str, 
-    payload: CoursePrice, 
+    course_id: str,
+    payload: CoursePrice,
     current_user=Depends(get_current_user)
 ):
     """
-    Set course price and duration - Admin only
+    Set or update course pricing per country - Super Admin only and teachers
     """
-    if current_user["role"] != "super_admin":
-        raise HTTPException(403, "Only super_admin can set prices")
-    
-    result = supabase.table("courses").update({
-        "price": payload.price,
-        "currency_symbol": payload.currency_symbol,
-        "duration_months": payload.duration_months,
-        "category": payload.category
-    }).eq("id", course_id).execute()
-    
-    return {"message": "Price updated successfully", "course": result.data}
+    if current_user["role"] not in ["super_admin", "teacher"]:
+        raise HTTPException(403, "Only super_admin or teacher can set prices")
+
+
+    country = payload.country or "India"
+
+    # 🔹 Step 1: Check if pricing already exists for this course + country
+    existing = supabase.table("course_pricing")\
+        .select("*")\
+        .eq("course_id", course_id)\
+        .eq("country", country)\
+        .execute()
+
+    # 🔹 Step 2: If exists → UPDATE
+    if existing.data and len(existing.data) > 0:
+        pricing_id = existing.data[0].get("id")
+
+        update_result = supabase.table("course_pricing")\
+            .update({
+                "price": payload.price,
+                "currency_symbol": payload.currency_symbol,
+                "duration_months": payload.duration_months,
+            })\
+            .eq("id", pricing_id)\
+            .execute()
+
+        if not update_result.data:
+            raise HTTPException(500, "Failed to update existing pricing")
+
+        return {
+            "message": f"Pricing updated successfully for {country}",
+            "pricing": update_result.data
+        }
+
+    # 🔹 Step 3: If not exists → UPSERT (create new)
+    else:
+        insert_result = supabase.table("course_pricing").insert({
+            "course_id": course_id,
+            "country": country,
+            "price": payload.price,
+            "currency_symbol": payload.currency_symbol,
+            "duration_months": payload.duration_months
+        }).execute()
+
+        if not insert_result.data:
+            raise HTTPException(500, "Failed to create new pricing")
+
+        return {
+            "message": f"Pricing added successfully for {country}",
+            "pricing": insert_result.data
+        }
 
 
 @router.post("/discounts")

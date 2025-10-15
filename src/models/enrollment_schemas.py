@@ -28,3 +28,4 @@ class DiscountCreate(BaseModel):
 class EnrollmentCreate(BaseModel):
     """Schema for enrolling in a course"""
     discount_code: Optional[str] = None
+    country: Optional[str] = None
