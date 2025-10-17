@@ -109,11 +109,11 @@ def apply_teacher(payload: TeacherApplication):
             supabase.table("teacher_applications")
             .select("*")
             .eq("email", payload.email)
-            .single()
+            .limit(1)
             .execute()
         )
 
-        if existing.data:
+        if existing.data and len(existing.data) > 0:
             return {
                 "message": "You have already submitted an application.",
                 "status": "duplicate"
