@@ -100,19 +100,51 @@ async def register_teacher(payload: dict):
 @router.post("/apply-teacher")
 def apply_teacher(payload: TeacherApplication):
     """
-    Submit teacher application
+    Submit teacher application.
+    If a user with the same email has already applied, show an appropriate message.
     """
-    application = supabase.table("teacher_applications").insert({
-        "email": payload.email,
-        "first_name": payload.first_name,
-        "last_name": payload.last_name,
-        "mobile_no": payload.mobile_no,
-        "languages_mastered": payload.languages_mastered or [],
-        "teaching_experience": payload.teaching_experience,
-        "timezone": payload.timezone,
-    }).execute()
+    try:
+        # Step 1: Check if an application already exists
+        existing = (
+            supabase.table("teacher_applications")
+            .select("*")
+            .eq("email", payload.email)
+            .single()
+            .execute()
+        )
 
-    return {"message": "Application submitted successfully", "status": "pending"}
+        if existing.data:
+            return {
+                "message": "You have already submitted an application.",
+                "status": "duplicate"
+            }
+
+        # Step 2: Insert new application if not found
+        application = (
+            supabase.table("teacher_applications")
+            .insert({
+                "email": payload.email,
+                "first_name": payload.first_name,
+                "last_name": payload.last_name,
+                "mobile_no": payload.mobile_no,
+                "languages_mastered": payload.languages_mastered or [],
+                "teaching_experience": payload.teaching_experience,
+                "timezone": payload.timezone,
+            })
+            .execute()
+        )
+
+        return {
+            "message": "Application submitted successfully.",
+            "status": "pending"
+        }
+
+    except Exception as e:
+        return {
+            "message": "An error occurred while processing your application.",
+            "error": str(e)
+        }
+
 
 
 @router.post("/register/super-admin")
