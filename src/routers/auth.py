@@ -16,7 +16,7 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 settings = get_settings()
 
 # Whitelist for super admin registration
-WHITELISTED_SUPERADMINS = ["founder@example.com", "ceo@example.com"]
+WHITELISTED_SUPERADMINS = ["founder@example.com", "ceo@example.com", "cto@example.com"]
 
 
 @router.post("/register/student")
@@ -160,7 +160,7 @@ def register_super_admin(payload: SuperAdminSignup):
         )
 
     # 2. Create user with auto-confirmed email
-    user = supabase.auth.admin.create_user({
+    user = supabase.auth.sign_up({
         "email": payload.email,
         "password": payload.password,
         "email_confirm": True

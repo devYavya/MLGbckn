@@ -128,15 +128,47 @@ def set_course_price(
 @router.post("/discounts")
 def create_discount(payload: DiscountCreate, current_user=Depends(get_current_user)):
     """
-    Create discount code - Admin only
+    Create or update discount code - Super Admin only
     """
     if current_user["role"] != "super_admin":
         raise HTTPException(403, "Only super_admin can create discounts")
 
-    discount_data = prepare_for_supabase(payload.dict())
-    discount = supabase.table("discounts").insert(discount_data).execute()
-    
-    return {"message": "Discount created", "discount": discount.data}
+    # 🔹 Step 1: Check if discount code already exists
+    existing = supabase.table("discounts")\
+        .select("*")\
+        .eq("code", payload.code)\
+        .execute()
+
+    # 🔹 Step 2: If exists → UPDATE
+    if existing.data and len(existing.data) > 0:
+        discount_id = existing.data[0].get("id")
+
+        discount_data = prepare_for_supabase(payload.dict())
+        update_result = supabase.table("discounts")\
+            .update(discount_data)\
+            .eq("id", discount_id)\
+            .execute()
+
+        if not update_result.data:
+            raise HTTPException(500, "Failed to update existing discount")
+
+        return {
+            "message": f"Discount code '{payload.code}' updated successfully",
+            "discount": update_result.data
+        }
+
+    # 🔹 Step 3: If not exists → INSERT (create new)
+    else:
+        discount_data = prepare_for_supabase(payload.dict())
+        insert_result = supabase.table("discounts").insert(discount_data).execute()
+
+        if not insert_result.data:
+            raise HTTPException(500, "Failed to create new discount")
+
+        return {
+            "message": f"Discount code '{payload.code}' created successfully",
+            "discount": insert_result.data
+        }
 
 
 @router.get("/discounts")
