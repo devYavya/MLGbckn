@@ -18,11 +18,16 @@ class DiscountCreate(BaseModel):
     """Schema for creating discount codes"""
     code: str
     discount_type: str  # "percentage" or "flat"
-    value: float
+    value: Optional[float] = None
+    percentage: Optional[float] = None
+    applies_to: str = "global"  # "course", "global", or "category"
     course_id: Optional[str] = None  # null = global
+    category: Optional[str] = None
     is_global: bool = False
-    valid_from: Optional[datetime] = datetime.utcnow()
-    valid_to: Optional[datetime] = None
+    valid_from: Optional[datetime] = None
+    valid_until: datetime  # Required field in DB
+    usage_limit: Optional[int] = None
+    max_uses: Optional[int] = None
 
 
 class EnrollmentCreate(BaseModel):

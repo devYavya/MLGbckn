@@ -139,11 +139,35 @@ def create_discount(payload: DiscountCreate, current_user=Depends(get_current_us
         .eq("code", payload.code)\
         .execute()
 
+    # Prepare data for database
+    discount_data = {
+        "code": payload.code,
+        "discount_type": payload.discount_type,
+        "applies_to": payload.applies_to,
+        "valid_until": payload.valid_until.isoformat() if payload.valid_until else None,
+        "is_global": payload.is_global,
+        "course_id": payload.course_id,
+        "category": payload.category,
+        "usage_limit": payload.usage_limit,
+        "max_uses": payload.max_uses,
+    }
+
+    # Add valid_from if provided
+    if payload.valid_from:
+        discount_data["valid_from"] = payload.valid_from.isoformat()
+
+    # Add value or percentage based on discount_type
+    if payload.discount_type == "percentage" and payload.percentage is not None:
+        discount_data["percentage"] = payload.percentage
+    elif payload.discount_type == "flat" and payload.value is not None:
+        discount_data["value"] = payload.value
+    elif payload.value is not None:
+        discount_data["value"] = payload.value
+
     # 🔹 Step 2: If exists → UPDATE
     if existing.data and len(existing.data) > 0:
         discount_id = existing.data[0].get("id")
 
-        discount_data = prepare_for_supabase(payload.dict())
         update_result = supabase.table("discounts")\
             .update(discount_data)\
             .eq("id", discount_id)\
@@ -154,12 +178,11 @@ def create_discount(payload: DiscountCreate, current_user=Depends(get_current_us
 
         return {
             "message": f"Discount code '{payload.code}' updated successfully",
-            "discount": update_result.data
+            "discount": update_result.data[0]
         }
 
     # 🔹 Step 3: If not exists → INSERT (create new)
     else:
-        discount_data = prepare_for_supabase(payload.dict())
         insert_result = supabase.table("discounts").insert(discount_data).execute()
 
         if not insert_result.data:
@@ -167,7 +190,7 @@ def create_discount(payload: DiscountCreate, current_user=Depends(get_current_us
 
         return {
             "message": f"Discount code '{payload.code}' created successfully",
-            "discount": insert_result.data
+            "discount": insert_result.data[0]
         }
 
 
