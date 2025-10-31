@@ -10,7 +10,9 @@ from src.routers import (
     admin_router,
     enrollments_router,
     profiles_router,
-    teachers_router
+    teachers_router,
+    ai_router
+
 )
 
 # Initialize settings
@@ -42,6 +44,7 @@ app.include_router(admin_router, prefix=settings.API_BASE_PATH)
 app.include_router(enrollments_router, prefix=settings.API_BASE_PATH)
 app.include_router(profiles_router, prefix=settings.API_BASE_PATH)
 app.include_router(teachers_router, prefix=settings.API_BASE_PATH)
+app.include_router(ai_router, prefix=settings.API_BASE_PATH)
 
 
 @app.get("/")

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     SUPABASE_URL : str
     SUPABASE_KEY : str
     JWT_SECRET: str
+    N8N_WEBHOOK_URL: str
 
     @computed_field
     @property

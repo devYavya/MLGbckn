@@ -1,6 +1,7 @@
 """
 Routers package - exports all API routers
 """
+from .ai import router as ai_router
 from .auth import router as auth_router
 from .courses import router as courses_router
 from .admin import router as admin_router
@@ -15,4 +16,5 @@ __all__ = [
     "enrollments_router",
     "profiles_router",
     "teachers_router",
+    "ai_router"
 ]
